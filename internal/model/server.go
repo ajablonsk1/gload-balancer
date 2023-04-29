@@ -7,22 +7,22 @@ import (
 )
 
 type Server struct {
-	url          *url.URL
-	alive        atomic.Bool
-	reverseProxy *httputil.ReverseProxy
+	Url          *url.URL
+	Alive        *atomic.Bool
+	ReverseProxy *httputil.ReverseProxy
 }
 
 func (s *Server) IsAlive() bool {
-	return s.alive.Load()
+	return s.Alive.Load()
 }
 
 func (s *Server) SetAlive(isAlive bool) {
-	s.alive.Swap(isAlive)
+	s.Alive.Swap(isAlive)
 }
 
 type ServerPool struct {
-	servers    []*Server
-	currentIdx uint64
+	Servers    []*Server
+	CurrentIdx uint64
 }
 
 func (s *ServerPool) GetAvailableServer(strategy LoadDistributionStrategy) *Server {
@@ -30,5 +30,5 @@ func (s *ServerPool) GetAvailableServer(strategy LoadDistributionStrategy) *Serv
 }
 
 func (s *ServerPool) NextIndex() int {
-	return int(atomic.AddUint64(&s.currentIdx, 1) % uint64(len(s.servers)))
+	return int(atomic.AddUint64(&s.CurrentIdx, 1) % uint64(len(s.Servers)))
 }
