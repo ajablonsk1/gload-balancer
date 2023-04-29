@@ -1,0 +1,5 @@
+#!/bin/bash
+
+HOOKS_DIR="../../.git/hooks"
+
+ln -s pre-push "${HOOKS_DIR}/pre-push"

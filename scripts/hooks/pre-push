@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Check branch name
+
+branch_name=$(git rev-parse --abbrev-ref HEAD)
+regex="^GL-[1-9]+-.*$"
+
+if [[ ! "$branch_name" =~ $regex ]]
+then
+  echo "Branch name must match naming convention GL-{branch_number}-{branch_name}"
+  exit 1
+fi
+
+exit 0
+
+
+
+
+
