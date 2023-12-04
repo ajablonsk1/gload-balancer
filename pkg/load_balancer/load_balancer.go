@@ -1,17 +1,31 @@
 package load_balancer
 
 import (
+	"log"
+	"net/http"
+	"net/url"
+
 	c "github.com/ajablonsk1/gload-balancer/internal/config"
-	"github.com/ajablonsk1/gload-balancer/internal/model"
+	"github.com/ajablonsk1/gload-balancer/internal/handler"
 )
 
 type LoadBalancer struct {
-	strategy   model.LoadDistributionStrategy
-	serverPool *model.ServerPool
+	addr         string
+	proxyHandler http.Handler
 }
 
 func NewLoadBalancer(path string) (*LoadBalancer, error) {
 	config, err := c.GetConfig(path)
+	if err != nil {
+		return nil, err
+	}
+
+	addr, err := config.GetAddress()
+	if err != nil {
+		return nil, err
+	}
+
+	url, err := url.Parse(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -26,12 +40,22 @@ func NewLoadBalancer(path string) (*LoadBalancer, error) {
 		return nil, err
 	}
 
+	proxyHandler := &handler.ProxyHandler{
+		Strategy:   strategy,
+		ServerPool: serverPool,
+	}
+
 	return &LoadBalancer{
-		strategy:   strategy,
-		serverPool: serverPool,
+		addr:         url.String(),
+		proxyHandler: proxyHandler,
 	}, nil
 }
 
 func (l *LoadBalancer) Start() {
-	// TODO
+	server := &http.Server{
+		Addr:    l.addr,
+		Handler: l.proxyHandler,
+	}
+
+	log.Fatal(server.ListenAndServe())
 }
