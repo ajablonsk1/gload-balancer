@@ -1,0 +1,14 @@
+{
+  "address": "localhost:8080",
+  "strategy": "round-robin",
+  "servers": [
+    {
+      "host": "localhost:1111",
+      "weight": 3
+    },
+    {
+      "host": "localhost:1112",
+      "weight": 2
+    }
+  ]
+}
