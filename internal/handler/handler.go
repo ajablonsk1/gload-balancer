@@ -12,6 +12,9 @@ type ProxyHandler struct {
 }
 
 func (h ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if ipHash, ok := h.Strategy.(*model.IPHash); ok {
+		ipHash.CurrSourceAddress = r.RemoteAddr
+	}
 	server := h.Strategy.GetServer(h.ServerPool)
 	server.Proxy.ServeHTTP(w, r)
 }
