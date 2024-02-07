@@ -5,6 +5,7 @@ import (
 
 	"github.com/ajablonsk1/gload-balancer/internal/config"
 	"github.com/ajablonsk1/gload-balancer/internal/model"
+	"github.com/ajablonsk1/gload-balancer/internal/utils"
 )
 
 func TestRoundRobinGetServer(t *testing.T) {
@@ -44,6 +45,22 @@ func TestWeightedRoundRobinGetServer(t *testing.T) {
 		next = strategy.GetServer(serverPool)
 		got = next.Url.String()
 		want = "http://localhost:1112"
+		if got != want {
+			t.Errorf("wrong server. got %s want %s", got, want)
+		}
+	})
+}
+
+func TestIpHashGetServer(t *testing.T) {
+	t.Run("get proper server from server pool weighted round robin", func(t *testing.T) {
+		c, _ := config.GetConfig("../../config/config.json")
+		serverPool, _ := c.GetServerPool()
+		addr := "localhost:2121"
+		strategy := model.IPHash{CurrSourceAddress: addr}
+		hash := utils.Hash(addr)
+
+		got := strategy.GetServer(serverPool).Url.String()
+		want := serverPool.Servers[hash%uint32(len(serverPool.Servers))].Url.String()
 		if got != want {
 			t.Errorf("wrong server. got %s want %s", got, want)
 		}
