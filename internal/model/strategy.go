@@ -2,6 +2,8 @@ package model
 
 import (
 	"sync/atomic"
+
+	"github.com/ajablonsk1/gload-balancer/internal/utils"
 )
 
 type LoadDistributionStrategy interface {
@@ -61,10 +63,16 @@ func (wR *WeightedRoundRobin) GetServer(serverPool *ServerPool) *Server {
 	return nil
 }
 
-type IPHash struct{}
+type IPHash struct {
+	CurrSourceAddress string
+}
 
 func (i *IPHash) GetServer(serverPool *ServerPool) *Server {
-	// TODO
+	hash := utils.Hash(i.CurrSourceAddress)
+	serversLength := len(serverPool.Servers)
+	if serversLength > 0 {
+		return serverPool.Servers[hash%uint32(serversLength)]
+	}
 	return nil
 }
 
