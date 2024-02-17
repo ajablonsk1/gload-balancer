@@ -51,8 +51,6 @@ func (c Config) GetLoadStrategy() (model.LoadDistributionStrategy, error) {
 			return &model.LeastSession{}, nil
 		case "weighted-least-connection":
 			return &model.WeightedLeastSession{}, nil
-		case "weighted-response-time":
-			return &model.WeightedResponseTime{}, nil
 		default:
 			return nil, errors.New("wrong strategy type in config file")
 		}
@@ -97,12 +95,10 @@ func (c Config) GetServerPool() (*model.ServerPool, error) {
 			return nil, err
 		}
 
-		switch strategy.(type) {
-		case *model.WeightedRoundRobin:
+		if _, ok := strategy.(*model.WeightedRoundRobin); ok {
 			slices.SortFunc(servers, model.SortByWeight)
-		default:
 		}
-
+		
 		return &model.ServerPool{
 			Servers: servers,
 		}, nil
