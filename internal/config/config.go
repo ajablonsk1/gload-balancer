@@ -9,6 +9,7 @@ import (
 	"os"
 	"slices"
 	"sync/atomic"
+	"time"
 
 	"github.com/ajablonsk1/gload-balancer/internal/model"
 )
@@ -47,9 +48,9 @@ func (c Config) GetLoadStrategy() (model.LoadDistributionStrategy, error) {
 		case "ip-hash":
 			return &model.IPHash{}, nil
 		case "least-connection":
-			return &model.LeastConnection{}, nil
+			return &model.LeastSession{}, nil
 		case "weighted-least-connection":
-			return &model.WeightedLeastConnection{}, nil
+			return &model.WeightedLeastSession{}, nil
 		case "weighted-response-time":
 			return &model.WeightedResponseTime{}, nil
 		default:
@@ -86,10 +87,11 @@ func (c Config) GetServerPool() (*model.ServerPool, error) {
 			weight := c.getServerWeight(server)
 
 			servers = append(servers, &model.Server{
-				Url:    serverUrl,
-				Alive:  isAlive,
-				Proxy:  proxy,
-				Weight: weight,
+				Url:            serverUrl,
+				Alive:          isAlive,
+				Proxy:          proxy,
+				Weight:         weight,
+				StickySessions: make(map[string]time.Time),
 			})
 		}
 
@@ -102,7 +104,6 @@ func (c Config) GetServerPool() (*model.ServerPool, error) {
 		case *model.WeightedRoundRobin:
 			slices.SortFunc(servers, model.SortByWeight)
 		default:
-			break
 		}
 
 		return &model.ServerPool{
