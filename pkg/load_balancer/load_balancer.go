@@ -4,14 +4,15 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
 	c "github.com/ajablonsk1/gload-balancer/internal/config"
 	"github.com/ajablonsk1/gload-balancer/internal/handler"
 )
 
 type LoadBalancer struct {
-	addr         string
-	proxyHandler http.Handler
+	Addr         string
+	ProxyHandler *handler.ProxyHandler
 }
 
 func NewLoadBalancer(path string) (*LoadBalancer, error) {
@@ -46,16 +47,27 @@ func NewLoadBalancer(path string) (*LoadBalancer, error) {
 	}
 
 	return &LoadBalancer{
-		addr:         url.String(),
-		proxyHandler: proxyHandler,
+		Addr:         url.String(),
+		ProxyHandler: proxyHandler,
 	}, nil
+}
+
+func (l *LoadBalancer) RunHealthChecks() {
+	ticker := time.NewTicker(3 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		l.ProxyHandler.ServerPool.HealthCheck()
+	}
 }
 
 func (l *LoadBalancer) Start() {
 	server := &http.Server{
-		Addr:    l.addr,
-		Handler: l.proxyHandler,
+		Addr:    l.Addr,
+		Handler: l.ProxyHandler,
 	}
+
+	go l.RunHealthChecks()
 
 	log.Fatal(server.ListenAndServe())
 }

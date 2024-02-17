@@ -15,7 +15,7 @@ func TestNewLoadBalancer(t *testing.T) {
 		if err != nil {
 			t.Errorf("error from new load balancer: %s", err)
 		}
-		if lb.addr != "localhost:8080" {
+		if lb.Addr != "localhost:8080" {
 			t.Errorf("wrong load balancer address")
 		}
 	})
@@ -45,7 +45,7 @@ func TestLoadBalancer(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/test", nil)
 		response := httptest.NewRecorder()
-		lb.proxyHandler.ServeHTTP(response, request)
+		lb.ProxyHandler.ServeHTTP(response, request)
 
 		if response.Code != 200 {
 			t.Errorf("wrong response code")
