@@ -2,7 +2,6 @@ package model
 
 import (
 	"slices"
-	"sync/atomic"
 
 	"github.com/ajablonsk1/gload-balancer/internal/utils"
 )
@@ -29,7 +28,7 @@ func (r *RoundRobin) GetServer(serverPool *ServerPool, remoteAddr string) *Serve
 		if server.IsAlive() {
 			// updating index if it was not the original one
 			if i != next {
-				atomic.StoreUint64(&serverPool.CurrentIdx, uint64(i))
+				serverPool.CurrentIdx.Store(uint64(i))
 			}
 			server.AddStickySession(remoteAddr)
 			return server
@@ -66,7 +65,7 @@ func (wR *WeightedRoundRobin) GetServer(serverPool *ServerPool, remoteAddr strin
 		server := serverPool.Servers[idx]
 		if server.IsAlive() {
 			if i != next {
-				atomic.StoreUint64(&serverPool.CurrentIdx, uint64(i))
+				serverPool.CurrentIdx.Store(uint64(i))
 			}
 			server.AddStickySession(remoteAddr)
 			return server
@@ -148,12 +147,5 @@ func (wL *WeightedLeastSession) GetServer(serverPool *ServerPool, remoteAddr str
 			return server
 		}
 	}
-	return nil
-}
-
-type WeightedResponseTime struct{}
-
-func (l *WeightedResponseTime) GetServer(serverPool *ServerPool, remoteAddr string) *Server {
-	// TODO
 	return nil
 }

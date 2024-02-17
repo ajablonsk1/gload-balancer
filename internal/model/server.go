@@ -2,9 +2,11 @@ package model
 
 import (
 	"cmp"
+	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"sync/atomic"
+	"sync"
+	"go.uber.org/atomic"
 	"time"
 )
 
@@ -21,7 +23,7 @@ func (s *Server) IsAlive() bool {
 }
 
 func (s *Server) SetAlive(isAlive bool) {
-	s.Alive.Swap(isAlive)
+	s.Alive.Store(isAlive)
 }
 
 func (s *Server) AddStickySession(remoteAddr string) {
@@ -45,6 +47,25 @@ func (s *Server) DeleteStickySessionsIfTimeExpired() {
 	}
 }
 
+func (s *Server) checkHealth() {
+    client := &http.Client{
+        Timeout: 2 * time.Second,
+    }
+
+    resp, err := client.Get(s.Url.String())
+    if err != nil {
+        s.SetAlive(false)
+        return
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode == http.StatusOK {
+        s.SetAlive(true)
+    } else {
+        s.SetAlive(false)
+    }
+}
+
 func (s *Server) NumberOfStickySessions() int {
 	return len(s.StickySessions)
 }
@@ -59,15 +80,15 @@ func SortByNConnections(a, b *Server) int {
 
 type ServerPool struct {
 	Servers    []*Server
-	CurrentIdx uint64
+	CurrentIdx atomic.Uint64
 }
 
 func (s *ServerPool) NextIndex() int {
-	return int(atomic.AddUint64(&s.CurrentIdx, 1) % uint64(len(s.Servers)))
+	return int(s.CurrentIdx.Add(1)) % len(s.Servers)
 }
 
 func (s *ServerPool) GetCurrentIdx() int {
-	return int(s.CurrentIdx) % len(s.Servers)
+	return int(s.CurrentIdx.Load()) % len(s.Servers)
 }
 
 func (s *ServerPool) OrganizeStickySessions() {
@@ -89,4 +110,17 @@ func (s *ServerPool) GetServerFromStickySession(remoteAddr string) *Server {
 		}
 	}
 	return nil
+}
+
+func (s *ServerPool) HealthCheck() {
+	var wg sync.WaitGroup
+
+	for _, currServer := range s.Servers {
+		wg.Add(1)
+		go func(server *Server) {
+			defer wg.Done()
+			server.checkHealth()
+		}(currServer)
+	}
+	wg.Wait()
 }

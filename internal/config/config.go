@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"os"
 	"slices"
-	"sync/atomic"
+	"go.uber.org/atomic"
 	"time"
 
 	"github.com/ajablonsk1/gload-balancer/internal/model"
@@ -79,16 +79,13 @@ func (c Config) GetServerPool() (*model.ServerPool, error) {
 				return nil, err
 			}
 
-			isAlive := &atomic.Bool{}
-			isAlive.Store(true)
-
 			proxy := httputil.NewSingleHostReverseProxy(serverUrl)
 
 			weight := c.getServerWeight(server)
 
 			servers = append(servers, &model.Server{
 				Url:            serverUrl,
-				Alive:          isAlive,
+				Alive:          atomic.NewBool(true),
 				Proxy:          proxy,
 				Weight:         weight,
 				StickySessions: make(map[string]time.Time),
